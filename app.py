@@ -7,6 +7,7 @@ from flask_login import LoginManager, current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
+from utils import get_unread_message_count
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -58,7 +59,8 @@ def load_user(user_id):
 def inject_global_variables():
     return {
         'current_user': current_user,
-        'current_year': datetime.now().year
+        'current_year': datetime.now().year,
+        'get_unread_message_count': get_unread_message_count
     }
 
 # Create db tables within app context
