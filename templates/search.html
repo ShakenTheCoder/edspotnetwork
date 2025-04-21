@@ -18,7 +18,7 @@
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <select class="form-select" name="type">
+                            <select class="form-select" name="type" id="userTypeSelect">
                                 <option value="" {% if not user_type %}selected{% endif %}>All</option>
                                 <option value="student" {% if user_type == 'student' %}selected{% endif %}>Students</option>
                                 <option value="university" {% if user_type == 'university' %}selected{% endif %}>Universities</option>
@@ -26,6 +26,35 @@
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-primary w-100">Search</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <button class="btn btn-sm btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#advancedSearch">
+                                <i class="fas fa-sliders-h me-1"></i> Advanced Search Options
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="collapse mt-3" id="advancedSearch">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" value="{{ location }}" placeholder="City, Country, etc.">
+                            </div>
+                            
+                            <div class="col-md-4 student-filter">
+                                <label for="skills" class="form-label">Skills</label>
+                                <input type="text" class="form-control" id="skills" name="skills" value="{{ skills }}" placeholder="e.g. Python, Marketing, Design">
+                                <small class="text-muted">Separate multiple skills with commas</small>
+                            </div>
+                            
+                            <div class="col-md-4 university-filter">
+                                <label for="programs" class="form-label">Programs/Courses</label>
+                                <input type="text" class="form-control" id="programs" name="programs" value="{{ programs }}" placeholder="e.g. Computer Science, Business">
+                                <small class="text-muted">Separate multiple programs with commas</small>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -142,4 +171,8 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
 {% endblock %}
