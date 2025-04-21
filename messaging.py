@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
-from data_store import get_user_by_id, add_message, get_conversation, get_conversations, add_chat_message, get_chat_messages
-from auth import login_required
+from flask_login import login_required, current_user
+from models import User, Message, ChatMessage
+from app import db
+from sqlalchemy import or_, and_
 from datetime import datetime
 
 messaging_bp = Blueprint('messaging', __name__)
@@ -8,16 +10,55 @@ messaging_bp = Blueprint('messaging', __name__)
 @messaging_bp.route('/messages')
 @login_required
 def messages():
-    user_id = session.get('user_id')
-    conversations = get_conversations(user_id)
+    user_id = current_user.id
+    
+    # Get all conversations where current user is either sender or receiver
+    sent_messages = Message.query.filter_by(sender_id=user_id).all()
+    received_messages = Message.query.filter_by(receiver_id=user_id).all()
+    
+    # Extract unique conversation partners
+    conversation_partners = set()
+    for msg in sent_messages:
+        conversation_partners.add(msg.receiver_id)
+    for msg in received_messages:
+        conversation_partners.add(msg.sender_id)
+    
+    # Build conversation list
+    conversations = []
+    for partner_id in conversation_partners:
+        partner = User.query.get(partner_id)
+        if partner:
+            # Get the most recent message
+            last_message = Message.query.filter(
+                or_(
+                    and_(Message.sender_id == user_id, Message.receiver_id == partner_id),
+                    and_(Message.sender_id == partner_id, Message.receiver_id == user_id)
+                )
+            ).order_by(Message.timestamp.desc()).first()
+            
+            # Count unread messages
+            unread_count = Message.query.filter_by(
+                sender_id=partner_id,
+                receiver_id=user_id,
+                is_read=False
+            ).count()
+            
+            conversations.append({
+                'user': partner,
+                'last_message': last_message,
+                'unread_count': unread_count
+            })
+    
+    # Sort conversations by last message timestamp
+    conversations.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else datetime.min, reverse=True)
     
     return render_template('messages.html', conversations=conversations)
 
 @messaging_bp.route('/messages/<int:other_user_id>', methods=['GET', 'POST'])
 @login_required
 def conversation(other_user_id):
-    user_id = session.get('user_id')
-    other_user = get_user_by_id(other_user_id)
+    user_id = current_user.id
+    other_user = User.query.get(other_user_id)
     
     if not other_user:
         flash('User not found', 'danger')
@@ -27,7 +68,16 @@ def conversation(other_user_id):
         content = request.form.get('message')
         
         if content:
-            message = add_message(user_id, other_user_id, content)
+            # Create new message
+            message = Message(
+                sender_id=user_id,
+                receiver_id=other_user_id,
+                content=content
+            )
+            
+            # Save to database
+            db.session.add(message)
+            db.session.commit()
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
@@ -40,7 +90,20 @@ def conversation(other_user_id):
                     }
                 })
     
-    messages = get_conversation(user_id, other_user_id)
+    # Get messages between the two users
+    messages = Message.query.filter(
+        or_(
+            and_(Message.sender_id == user_id, Message.receiver_id == other_user_id),
+            and_(Message.sender_id == other_user_id, Message.receiver_id == user_id)
+        )
+    ).order_by(Message.timestamp).all()
+    
+    # Mark received messages as read
+    for msg in messages:
+        if msg.receiver_id == user_id and not msg.is_read:
+            msg.is_read = True
+    
+    db.session.commit()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({
@@ -54,76 +117,99 @@ def conversation(other_user_id):
             ]
         })
     
+    # Get conversations for sidebar
+    # We reuse the code from the messages route, this would normally be refactored
+    # to a helper function to avoid duplication
+    sent_messages = Message.query.filter_by(sender_id=user_id).all()
+    received_messages = Message.query.filter_by(receiver_id=user_id).all()
+    
+    conversation_partners = set()
+    for msg in sent_messages:
+        conversation_partners.add(msg.receiver_id)
+    for msg in received_messages:
+        conversation_partners.add(msg.sender_id)
+    
+    conversations = []
+    for partner_id in conversation_partners:
+        partner = User.query.get(partner_id)
+        if partner:
+            last_message = Message.query.filter(
+                or_(
+                    and_(Message.sender_id == user_id, Message.receiver_id == partner_id),
+                    and_(Message.sender_id == partner_id, Message.receiver_id == user_id)
+                )
+            ).order_by(Message.timestamp.desc()).first()
+            
+            unread_count = Message.query.filter_by(
+                sender_id=partner_id,
+                receiver_id=user_id,
+                is_read=False
+            ).count()
+            
+            conversations.append({
+                'user': partner,
+                'last_message': last_message,
+                'unread_count': unread_count
+            })
+    
+    conversations.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else datetime.min, reverse=True)
+    
     return render_template(
         'messages.html',
         other_user=other_user,
         messages=messages,
-        conversations=get_conversations(user_id)
+        conversations=conversations
     )
 
 @messaging_bp.route('/chat', methods=['GET', 'POST'])
 @login_required
 def chat():
-    user_id = session.get('user_id')
-    user = get_user_by_id(user_id)
-    
     # Handle message posting
     if request.method == 'POST':
         content = request.form.get('message')
         
         if content:
-            message = add_chat_message(user_id, content)
+            # Create new chat message
+            message = ChatMessage(
+                user_id=current_user.id,
+                content=content
+            )
+            
+            # Save to database
+            db.session.add(message)
+            db.session.commit()
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                sender = get_user_by_id(message.user_id)
-                if sender:
-                    return jsonify({
-                        'status': 'success',
-                        'message': {
-                            'id': message.id,
-                            'content': message.content,
-                            'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                            'user': {
-                                'id': sender.id,
-                                'name': sender.name,
-                                'user_type': sender.user_type
-                            }
+                return jsonify({
+                    'status': 'success',
+                    'message': {
+                        'id': message.id,
+                        'content': message.content,
+                        'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                        'user': {
+                            'id': current_user.id,
+                            'name': current_user.name,
+                            'user_type': current_user.user_type
                         }
-                    })
+                    }
+                })
     
     # Check if we're polling for new messages since a specific ID
     since_id = request.args.get('since', 0, type=int)
-    messages = get_chat_messages()
+    
+    # Get chat messages
+    query = ChatMessage.query.order_by(ChatMessage.timestamp)
     
     # Filter messages if since_id is provided in AJAX request
-    if since_id > 0 and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        new_messages = [msg for msg in messages if msg.id > since_id]
-        
-        # Format the messages for JSON response
-        response_messages = []
-        for msg in new_messages:
-            sender = get_user_by_id(msg.user_id)
-            if sender:
-                response_messages.append({
-                    'id': msg.id,
-                    'content': msg.content,
-                    'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                    'user': {
-                        'id': sender.id,
-                        'name': sender.name,
-                        'user_type': sender.user_type
-                    }
-                })
-        
-        return jsonify({
-            'messages': response_messages
-        })
+    if since_id > 0:
+        query = query.filter(ChatMessage.id > since_id)
     
-    # Handle regular AJAX request for all messages
-    elif request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    messages = query.all()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         response_messages = []
         for msg in messages:
-            sender = get_user_by_id(msg.user_id)
+            sender = User.query.get(msg.user_id)
             if sender:
                 response_messages.append({
                     'id': msg.id,
@@ -140,8 +226,10 @@ def chat():
             'messages': response_messages
         })
     
-    # Pass the get_user_by_id function to the template
-    return render_template('chat.html', messages=messages, get_user_by_id=get_user_by_id)
+    # For regular page load, get all messages
+    messages = ChatMessage.query.order_by(ChatMessage.timestamp).all()
+    
+    return render_template('chat.html', messages=messages)
 
 # This will be registered with the app in app.py
 def format_time(dt):

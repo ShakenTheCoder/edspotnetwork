@@ -12,21 +12,18 @@
             <div class="card-body">
                 <div class="chat-messages" id="chatMessages">
                     {% for message in messages %}
-                    {% set sender = get_user_by_id(message.user_id) %}
-                    {% if sender %}
-                    <div class="chat-message">
+                    <div class="chat-message" data-message-id="{{ message.id }}">
                         <div class="chat-sender">
-                            <a href="{{ url_for('profile.view_profile', user_id=sender.id) }}" class="text-decoration-none">
-                                {{ sender.name }}
+                            <a href="{{ url_for('profile.view_profile', user_id=message.user.id) }}" class="text-decoration-none">
+                                {{ message.user.name }}
                             </a>
-                            <span class="badge {% if sender.user_type == 'student' %}bg-primary{% else %}bg-success{% endif %} ms-1">
-                                {{ sender.user_type|capitalize }}
+                            <span class="badge {% if message.user.user_type == 'student' %}bg-primary{% else %}bg-success{% endif %} ms-1">
+                                {{ message.user.user_type|capitalize }}
                             </span>
                             <small class="text-muted">{{ message.timestamp|format_time }}</small>
                         </div>
                         <div class="chat-content">{{ message.content }}</div>
                     </div>
-                    {% endif %}
                     {% endfor %}
                     
                     {% if not messages %}

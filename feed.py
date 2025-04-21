@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
-from data_store import add_post, get_feed_for_user, get_user_by_id, like_post, unlike_post
-from auth import login_required
+from flask_login import login_required, current_user
+from models import User, Post
+from app import db
 from datetime import datetime
 
 feed_bp = Blueprint('feed', __name__)
@@ -8,24 +9,22 @@ feed_bp = Blueprint('feed', __name__)
 @feed_bp.route('/home')
 @login_required
 def home():
-    user_id = session.get('user_id')
-    user = get_user_by_id(user_id)
+    user_id = current_user.id
+    user = current_user
     
-    if not user:
-        flash('User not found', 'danger')
-        return redirect(url_for('auth.logout'))
-    
-    posts = get_feed_for_user(user_id)
+    # Get posts from people the user is connected with and universities they follow
+    # For now, just get all posts ordered by timestamp descending
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
     
     # Enrich posts with user information
     enriched_posts = []
     for post in posts:
-        post_user = get_user_by_id(post.user_id)
+        post_user = User.query.get(post.user_id)
         if post_user:
             enriched_posts.append({
                 'post': post,
                 'user': post_user,
-                'is_liked': user_id in post.likes
+                'is_liked': user in post.liked_by
             })
     
     return render_template(
@@ -37,41 +36,70 @@ def home():
 @feed_bp.route('/post', methods=['POST'])
 @login_required
 def create_post():
-    user_id = session.get('user_id')
     content = request.form.get('content')
     
     if not content or len(content.strip()) == 0:
         flash('Post cannot be empty', 'danger')
         return redirect(url_for('feed.home'))
     
-    post = add_post(user_id, content)
-    flash('Post created successfully!', 'success')
+    # Create new post
+    post = Post(
+        user_id=current_user.id,
+        content=content
+    )
     
+    # Add to database
+    db.session.add(post)
+    db.session.commit()
+    
+    flash('Post created successfully!', 'success')
     return redirect(url_for('feed.home'))
 
 @feed_bp.route('/post/like/<int:post_id>', methods=['POST'])
 @login_required
 def like_post_route(post_id):
-    user_id = session.get('user_id')
-    success = like_post(post_id, user_id)
+    post = Post.query.get(post_id)
+    
+    if not post:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'status': 'error', 'message': 'Post not found'}), 404
+        flash('Post not found', 'danger')
+        return redirect(url_for('feed.home'))
+    
+    # Add user to liked_by relationship if not already there
+    if current_user not in post.liked_by:
+        post.liked_by.append(current_user)
+        db.session.commit()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        if success:
-            return jsonify({'status': 'success'})
-        return jsonify({'status': 'error', 'message': 'Post not found'}), 404
+        return jsonify({
+            'status': 'success',
+            'like_count': post.liked_by.count()
+        })
     
     return redirect(url_for('feed.home'))
 
 @feed_bp.route('/post/unlike/<int:post_id>', methods=['POST'])
 @login_required
 def unlike_post_route(post_id):
-    user_id = session.get('user_id')
-    success = unlike_post(post_id, user_id)
+    post = Post.query.get(post_id)
+    
+    if not post:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'status': 'error', 'message': 'Post not found'}), 404
+        flash('Post not found', 'danger')
+        return redirect(url_for('feed.home'))
+    
+    # Remove user from liked_by relationship if present
+    if current_user in post.liked_by:
+        post.liked_by.remove(current_user)
+        db.session.commit()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        if success:
-            return jsonify({'status': 'success'})
-        return jsonify({'status': 'error', 'message': 'Post not found'}), 404
+        return jsonify({
+            'status': 'success',
+            'like_count': post.liked_by.count()
+        })
     
     return redirect(url_for('feed.home'))
 

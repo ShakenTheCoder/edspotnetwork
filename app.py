@@ -3,6 +3,7 @@ import logging
 from flask import Flask, redirect, url_for, render_template, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
@@ -17,6 +18,9 @@ class Base(DeclarativeBase):
 # Create the db instance
 db = SQLAlchemy(model_class=Base)
 
+# Create login manager
+login_manager = LoginManager()
+
 # Create Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "edspot-dev-key")
@@ -28,6 +32,10 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 # Initialize extensions
 db.init_app(app)
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'warning'
+
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # needed for url_for to generate with https
 CORS(app)
 
@@ -39,15 +47,15 @@ from messaging import format_time
 app.template_filter('time_ago')(time_ago)
 app.template_filter('format_time')(format_time)
 
+# Setup Flask-Login user loader
+@login_manager.user_loader
+def load_user(user_id):
+    from models import User
+    return User.query.get(int(user_id))
+
 # Add context processor for current user in all templates
 @app.context_processor
 def inject_global_variables():
-    from models import User
-    
-    current_user = None
-    if 'user_id' in session:
-        current_user = User.query.get(session.get('user_id'))
-    
     return {
         'current_user': current_user,
         'current_year': datetime.now().year
