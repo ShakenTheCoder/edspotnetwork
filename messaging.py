@@ -226,16 +226,23 @@ def chat():
             'messages': response_messages
         })
     
-    # For regular page load, get all messages with their related users
+    # For regular page load, get all messages with their related users and avoid duplicates
+    # Use distinct on id to ensure each message appears only once
     messages = ChatMessage.query.order_by(ChatMessage.timestamp).all()
     
-    # Make sure each message has its user data directly accessible for the template
-    # This is needed because we removed the get_user_by_id function
-    for message in messages:
-        # Load the user relationship (actually already loaded by SQLAlchemy, but this is clearer)
-        message.user = User.query.get(message.user_id)
+    # Use a set to track message IDs to prevent duplicates
+    seen_message_ids = set()
+    unique_messages = []
     
-    return render_template('chat.html', messages=messages)
+    # Filter out duplicate messages
+    for message in messages:
+        if message.id not in seen_message_ids:
+            # Load the user relationship
+            message.user = User.query.get(message.user_id)
+            unique_messages.append(message)
+            seen_message_ids.add(message.id)
+    
+    return render_template('chat.html', messages=unique_messages)
 
 # This will be registered with the app in app.py
 def format_time(dt):
