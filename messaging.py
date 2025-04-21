@@ -226,8 +226,14 @@ def chat():
             'messages': response_messages
         })
     
-    # For regular page load, get all messages
+    # For regular page load, get all messages with their related users
     messages = ChatMessage.query.order_by(ChatMessage.timestamp).all()
+    
+    # Make sure each message has its user data directly accessible for the template
+    # This is needed because we removed the get_user_by_id function
+    for message in messages:
+        # Load the user relationship (actually already loaded by SQLAlchemy, but this is clearer)
+        message.user = User.query.get(message.user_id)
     
     return render_template('chat.html', messages=messages)
 
