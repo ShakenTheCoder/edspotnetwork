@@ -66,44 +66,33 @@ function handleLikeButtons() {
 function setupMessagePolling() {
     const messageContainer = document.querySelector('.messages-body');
     const conversationId = messageContainer?.dataset.conversationId;
-    let lastMessageId = null;
     
     if (messageContainer && conversationId) {
-        // Get initial last message ID
-        const messages = messageContainer.querySelectorAll('.message-bubble');
-        if (messages.length > 0) {
-            lastMessageId = messages[messages.length - 1].dataset.messageId;
-        }
-        
         // Poll for new messages every 5 seconds
         setInterval(() => {
-            fetch(`/messages/${conversationId}?since=${lastMessageId || 0}`, {
+            fetch(`/messages/${conversationId}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => response.json())
             .then(data => {
-                // Only append new messages
+                // Update the messages container with any new messages
                 const messages = data.messages;
+                let messagesHTML = '';
+                
                 messages.forEach(message => {
-                    if (!document.querySelector(`[data-message-id="${message.id}"]`)) {
-                        const bubbleClass = message.is_sender ? 'message-sender' : 'message-receiver';
-                        const messageElement = document.createElement('div');
-                        messageElement.className = `message-bubble ${bubbleClass}`;
-                        messageElement.dataset.messageId = message.id;
-                        messageElement.innerHTML = `
+                    const bubbleClass = message.is_sender ? 'message-sender' : 'message-receiver';
+                    messagesHTML += `
+                        <div class="message-bubble ${bubbleClass}">
                             <div class="message-content">${message.content}</div>
                             <div class="message-time">${message.timestamp}</div>
-                        `;
-                        messageContainer.appendChild(messageElement);
-                        lastMessageId = message.id;
-                    }
+                        </div>
+                    `;
                 });
                 
-                if (messages.length > 0) {
-                    messageContainer.scrollTop = messageContainer.scrollHeight;
-                }
+                messageContainer.innerHTML = messagesHTML;
+                messageContainer.scrollTop = messageContainer.scrollHeight;
             })
             .catch(error => console.error('Error:', error));
         }, 5000);

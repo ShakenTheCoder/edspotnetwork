@@ -15,16 +15,28 @@ def get_current_user():
     return None
 
 def get_unread_message_count(user_id):
-    """Get the count of unread messages for a user"""
+    """Get the count of unread messages for a user
+    
+    Args:
+        user_id: The ID of the user to check unread messages for
+        
+    Returns:
+        int: Number of unread messages
+    """
     from models import Message
     from sqlalchemy import and_
+    from app import db
     
-    # Count unread messages where the user is the receiver
-    unread_count = Message.query.filter(
-        and_(
-            Message.receiver_id == user_id,
-            Message.is_read == False
-        )
-    ).count()
-    
-    return unread_count
+    try:
+        # Use efficient count query
+        unread_count = db.session.query(Message).filter(
+            and_(
+                Message.receiver_id == user_id,
+                Message.is_read.is_(False)  # More explicit than == False
+            )
+        ).count()
+        
+        return unread_count
+    except Exception as e:
+        print(f"Error getting unread message count: {e}")
+        return 0

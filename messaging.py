@@ -67,13 +67,8 @@ def conversation(other_user_id):
     if request.method == 'POST':
         content = request.form.get('message')
         
-        if content and not Message.query.filter(
-            Message.sender_id == user_id,
-            Message.receiver_id == other_user_id,
-            Message.content == content,
-            Message.timestamp >= datetime.now() - timedelta(seconds=5)
-        ).first():
-            # Create new message only if no duplicate exists within last 5 seconds
+        if content:
+            # Create new message
             message = Message(
                 sender_id=user_id,
                 receiver_id=other_user_id,
@@ -84,17 +79,16 @@ def conversation(other_user_id):
             db.session.add(message)
             db.session.commit()
             
-            # Always return JSON response
-            return jsonify({
-                'status': 'success',
-                'message': {
-                    'id': message.id,
-                    'content': message.content,
-                    'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                    'is_sender': True
-                }
-            })
-        return jsonify({'status': 'error', 'message': 'Duplicate message'})
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'status': 'success',
+                    'message': {
+                        'id': message.id,
+                        'content': message.content,
+                        'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                        'is_sender': True
+                    }
+                })
     
     # Get messages between the two users
     messages = Message.query.filter(
@@ -112,8 +106,6 @@ def conversation(other_user_id):
     db.session.commit()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        since_id = request.args.get('since', 0, type=int)
-        filtered_messages = [msg for msg in messages if msg.id > since_id]
         return jsonify({
             'messages': [
                 {
@@ -121,7 +113,7 @@ def conversation(other_user_id):
                     'content': msg.content,
                     'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                     'is_sender': msg.sender_id == user_id
-                } for msg in filtered_messages
+                } for msg in messages
             ]
         })
     
