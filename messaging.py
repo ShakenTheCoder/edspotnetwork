@@ -106,6 +106,8 @@ def conversation(other_user_id):
     db.session.commit()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        since_id = request.args.get('since', 0, type=int)
+        filtered_messages = [msg for msg in messages if msg.id > since_id]
         return jsonify({
             'messages': [
                 {
@@ -113,7 +115,7 @@ def conversation(other_user_id):
                     'content': msg.content,
                     'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                     'is_sender': msg.sender_id == user_id
-                } for msg in messages
+                } for msg in filtered_messages
             ]
         })
     
