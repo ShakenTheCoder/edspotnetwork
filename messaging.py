@@ -107,7 +107,8 @@ def chat():
             ]
         })
     
-    return render_template('chat.html', messages=messages)
+    # Pass the get_user_by_id function to the template
+    return render_template('chat.html', messages=messages, get_user_by_id=get_user_by_id)
 
 # This will be registered with the app in app.py
 def format_time(dt):

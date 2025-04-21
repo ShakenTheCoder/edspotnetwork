@@ -9,14 +9,28 @@ search_bp = Blueprint('search', __name__)
 def search():
     query = request.args.get('q', '')
     user_type = request.args.get('type', '')
+    location = request.args.get('location', '')
+    skills = request.args.get('skills', '')
+    programs = request.args.get('programs', '')
     
     results = []
     
-    if query:
+    if query or location or skills or programs:
         if user_type in ['student', 'university']:
-            results = search_users(query, user_type)
+            results = search_users(
+                query, 
+                user_type=user_type,
+                location=location,
+                skills=skills,
+                programs=programs
+            )
         else:
-            results = search_users(query)
+            results = search_users(
+                query,
+                location=location,
+                skills=skills,
+                programs=programs
+            )
     
     current_user_id = session.get('user_id')
     current_user = get_user_by_id(current_user_id)
@@ -34,5 +48,8 @@ def search():
         'search.html', 
         query=query, 
         results=results,
-        user_type=user_type
+        user_type=user_type,
+        location=location,
+        skills=skills,
+        programs=programs
     )

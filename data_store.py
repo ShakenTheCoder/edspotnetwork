@@ -188,18 +188,54 @@ def add_chat_message(user_id, content):
 def get_chat_messages(limit=50):
     return sorted(chat_messages, key=lambda m: m.timestamp)[-limit:]
 
-def search_users(query, user_type=None):
+def search_users(query, user_type=None, location=None, skills=None, programs=None):
     results = []
-    query = query.lower()
+    if query:
+        query = query.lower()
     
     for user in users.values():
+        # Filter by user type
         if user_type and user.user_type != user_type:
             continue
             
-        if (query in user.name.lower() or 
-            query in user.email.lower() or 
-            (user.user_type == 'student' and any(query in skill.lower() for skill in user.skills)) or
-            (user.user_type == 'university' and query in user.location.lower())):
+        # Initialize match flags
+        query_match = True
+        location_match = True
+        skills_match = True
+        programs_match = True
+        
+        # Filter by query (name, email, bio/description)
+        if query:
+            query_match = (
+                query in user.name.lower() or 
+                query in user.email.lower() or 
+                (user.user_type == 'student' and hasattr(user, 'bio') and query in user.bio.lower()) or
+                (user.user_type == 'university' and hasattr(user, 'description') and query in user.description.lower())
+            )
+        
+        # Filter by location
+        if location and location.strip():
+            location = location.lower().strip()
+            if user.user_type == 'student':
+                # For students, check education which might contain location info
+                location_match = any(location in edu.lower() for edu in user.education if edu)
+            else:
+                # For universities, check the location attribute
+                location_match = location in getattr(user, 'location', '').lower()
+        
+        # Filter by skills (for students)
+        if skills and skills.strip() and user.user_type == 'student':
+            skills_list = [s.strip().lower() for s in skills.split(',') if s.strip()]
+            skills_match = any(skill in ' '.join(user.skills).lower() for skill in skills_list)
+        
+        # Filter by programs (for universities)
+        if programs and programs.strip() and user.user_type == 'university':
+            programs_list = [p.strip().lower() for p in programs.split(',') if p.strip()]
+            # Assume description might contain program information
+            programs_match = any(program in getattr(user, 'description', '').lower() for program in programs_list)
+        
+        # Add to results if all criteria match
+        if query_match and location_match and skills_match and programs_match:
             results.append(user)
     
     return results

@@ -21,6 +21,22 @@ from messaging import format_time
 app.template_filter('time_ago')(time_ago)
 app.template_filter('format_time')(format_time)
 
+# Add context processor for current user in all templates
+@app.context_processor
+def inject_global_variables():
+    from data_store import get_user_by_id
+    from flask import session
+    from datetime import datetime
+    
+    current_user = None
+    if 'user_id' in session:
+        current_user = get_user_by_id(session.get('user_id'))
+    
+    return {
+        'current_user': current_user,
+        'current_year': datetime.now().year
+    }
+
 # Import routes after app is created to avoid circular imports
 from auth import auth_bp
 from feed import feed_bp
