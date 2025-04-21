@@ -1,0 +1,168 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ university.name }} - Edspot{% endblock %}
+
+{% block content %}
+<div class="profile-header text-center text-md-start">
+    <div class="container">
+        <div class="row align-items-end">
+            <div class="col-md-3 text-center mb-3 mb-md-0">
+                <div class="d-inline-block position-relative">
+                    {% if university.profile_image %}
+                    <img src="{{ university.profile_image }}" alt="{{ university.name }}" class="university-logo">
+                    {% else %}
+                    <div class="university-logo d-flex align-items-center justify-content-center bg-light">
+                        <i class="fas fa-university fa-4x text-secondary"></i>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="d-md-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-1">{{ university.name }}</h1>
+                        <p class="lead mb-2">University</p>
+                        <p class="text-muted mb-0">
+                            {% if university.location %}
+                                <i class="fas fa-map-marker-alt me-1"></i> {{ university.location }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="mt-3 mt-md-0">
+                        {% if is_self %}
+                        <a href="{{ url_for('profile.edit_profile') }}" class="btn btn-outline-light">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                        {% elif current_user.user_type == 'student' %}
+                            {% if is_following %}
+                            <form action="{{ url_for('profile.unfollow_university', university_id=university.id) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-outline-light">
+                                    <i class="fas fa-star"></i> Following
+                                </button>
+                            </form>
+                            {% else %}
+                            <form action="{{ url_for('profile.follow_university', university_id=university.id) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="far fa-star"></i> Follow
+                                </button>
+                            </form>
+                            {% endif %}
+                            <a href="{{ url_for('messaging.conversation', other_user_id=university.id) }}" class="btn btn-light ms-2">
+                                <i class="fas fa-comment"></i> Message
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-4 order-lg-2">
+            <!-- Info Section -->
+            <div class="card section-card">
+                <div class="card-header">
+                    <h4 class="mb-0">Information</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% if university.website %}
+                        <li class="list-group-item bg-transparent">
+                            <i class="fas fa-globe me-2"></i> 
+                            <a href="{{ university.website }}" target="_blank" rel="noopener">{{ university.website }}</a>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item bg-transparent">
+                            <i class="fas fa-users me-2"></i> {{ university.followers|length }} follower{{ 's' if university.followers|length != 1 else '' }}
+                        </li>
+                        <li class="list-group-item bg-transparent">
+                            <i class="far fa-calendar-alt me-2"></i> Joined {{ university.date_joined.strftime('%B %Y') }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-8 order-lg-1">
+            <!-- About Section -->
+            <div class="card bio-section">
+                <div class="card-header">
+                    <h4 class="mb-0">About</h4>
+                </div>
+                <div class="card-body">
+                    {% if university.description %}
+                        <p>{{ university.description }}</p>
+                    {% else %}
+                        <p class="text-muted">No description available.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Posts Section -->
+            <h3 class="mb-3">Posts</h3>
+            
+            {% if is_self %}
+            <div class="card create-post-card">
+                <div class="card-body">
+                    <form action="{{ url_for('feed.create_post') }}" method="post">
+                        <div class="mb-3">
+                            <textarea class="form-control" name="content" rows="3" placeholder="Share an update with your followers..."></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Post</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if posts %}
+                {% for post in posts %}
+                <div class="card post-card">
+                    <div class="card-body">
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                {% if university.profile_image %}
+                                <img src="{{ university.profile_image }}" alt="{{ university.name }}" class="post-user-img">
+                                {% else %}
+                                <div class="post-user-img d-flex align-items-center justify-content-center bg-light">
+                                    <i class="fas fa-university fa-lg text-secondary"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="mb-0">{{ university.name }}</h5>
+                                <p class="text-muted small mb-0">{{ post.timestamp|time_ago }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="post-content mb-3">
+                            {{ post.content }}
+                        </div>
+                        
+                        <div class="post-actions d-flex align-items-center pt-2">
+                            <span class="me-3 like-count">{{ post.likes|length }}</span>
+                            {% if current_user.id in post.likes %}
+                            <button class="btn btn-sm btn-link text-decoration-none like-button" data-post-id="{{ post.id }}" data-action="unlike">
+                                <i class="fas fa-heart text-danger"></i> Unlike
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-link text-decoration-none like-button" data-post-id="{{ post.id }}" data-action="like">
+                                <i class="far fa-heart"></i> Like
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    No posts yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

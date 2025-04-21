@@ -1,0 +1,73 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edspot - Connect Students with Universities{% endblock %}
+
+{% block content %}
+<div class="row align-items-center min-vh-75">
+    <div class="col-md-6">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Edspot</h1>
+        <p class="lead mb-4">The professional network connecting students with universities worldwide.</p>
+        <p class="mb-5">Build your academic profile, connect with peers, and discover universities that match your interests and career goals.</p>
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg">Sign In</a>
+        </div>
+    </div>
+    <div class="col-md-6 text-center">
+        <svg width="400" height="300" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="50" y="100" width="700" height="400" rx="20" fill="#283E4A"/>
+            <circle cx="400" cy="250" r="100" fill="#0073B1"/>
+            <rect x="100" y="400" width="600" height="50" rx="10" fill="#00A0DC"/>
+            <rect x="200" y="150" width="400" height="40" rx="5" fill="#E6F7FF"/>
+            <rect x="150" y="220" width="150" height="150" rx="10" fill="#2867B2"/>
+            <rect x="500" y="220" width="150" height="150" rx="10" fill="#2867B2"/>
+            <circle cx="225" cy="295" r="50" fill="#E6F7FF"/>
+            <circle cx="575" cy="295" r="50" fill="#E6F7FF"/>
+            <line x1="325" y1="295" x2="475" y2="295" stroke="#E6F7FF" stroke-width="5"/>
+        </svg>
+    </div>
+</div>
+
+<hr class="my-5">
+
+<div class="row py-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 bg-dark shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="mb-4">
+                    <i class="fas fa-user-graduate fa-3x text-primary"></i>
+                </div>
+                <h3 class="card-title">For Students</h3>
+                <p class="card-text">Build your academic profile, showcase skills, and connect with universities that align with your career goals.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 bg-dark shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="mb-4">
+                    <i class="fas fa-university fa-3x text-success"></i>
+                </div>
+                <h3 class="card-title">For Universities</h3>
+                <p class="card-text">Connect with talented students, share updates, and build your institutional presence.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 bg-dark shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="mb-4">
+                    <i class="fas fa-comments fa-3x text-info"></i>
+                </div>
+                <h3 class="card-title">Seamless Communication</h3>
+                <p class="card-text">Exchange messages, participate in global chats, and stay connected with your network.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center py-5">
+    <h2 class="mb-4">Ready to get started?</h2>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5">Join Edspot Today</a>
+</div>
+{% endblock %}

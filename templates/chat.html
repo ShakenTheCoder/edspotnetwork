@@ -1,0 +1,80 @@
+{% extends 'layout.html' %}
+
+{% block title %}Global Chat - Edspot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Global Chat</h3>
+            </div>
+            <div class="card-body">
+                <div class="chat-messages">
+                    {% for message in messages %}
+                    {% set sender = get_user_by_id(message.user_id) %}
+                    {% if sender %}
+                    <div class="chat-message">
+                        <div class="chat-sender">
+                            <a href="{{ url_for('profile.view_profile', user_id=sender.id) }}" class="text-decoration-none">
+                                {{ sender.name }}
+                            </a>
+                            <span class="badge {% if sender.user_type == 'student' %}bg-primary{% else %}bg-success{% endif %} ms-1">
+                                {{ sender.user_type|capitalize }}
+                            </span>
+                            <small class="text-muted">{{ message.timestamp|format_time }}</small>
+                        </div>
+                        <div class="chat-content">{{ message.content }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if not messages %}
+                    <div class="text-center text-muted my-5">
+                        <p>No messages in the global chat yet.</p>
+                        <p>Be the first to start the conversation!</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="chat-form">
+                    <form method="post" action="{{ url_for('messaging.chat') }}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="message" placeholder="Type a message..." required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4 class="mb-0">About Global Chat</h4>
+            </div>
+            <div class="card-body">
+                <p>The global chat is a public space where all Edspot users can communicate.</p>
+                <ul>
+                    <li>Messages are visible to all users</li>
+                    <li>Be respectful and follow community guidelines</li>
+                    <li>For private conversations, use the direct messaging feature</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Scroll to bottom of chat on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.querySelector('.chat-messages');
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

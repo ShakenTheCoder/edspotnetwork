@@ -1,0 +1,145 @@
+{% extends 'layout.html' %}
+
+{% block title %}Search - Edspot{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="mb-4">Search Edspot</h3>
+                
+                <form action="{{ url_for('search.search') }}" method="get">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search for students, universities, skills...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" name="type">
+                                <option value="" {% if not user_type %}selected{% endif %}>All</option>
+                                <option value="student" {% if user_type == 'student' %}selected{% endif %}>Students</option>
+                                <option value="university" {% if user_type == 'university' %}selected{% endif %}>Universities</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Search</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if query %}
+            <h4 class="mb-3">Search Results for "{{ query }}"</h4>
+            
+            {% if results %}
+                <div class="row">
+                    {% for result in results %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card search-result-card h-100">
+                            <div class="card-body position-relative">
+                                <span class="badge {% if result.user_type == 'student' %}bg-primary{% else %}bg-success{% endif %} user-type-badge">
+                                    {{ result.user_type|capitalize }}
+                                </span>
+                                
+                                <div class="text-center mb-3">
+                                    {% if result.profile_image %}
+                                    <img src="{{ result.profile_image }}" alt="{{ result.name }}" class="rounded-circle mb-2" width="80" height="80">
+                                    {% else %}
+                                        {% if result.user_type == 'university' %}
+                                        <div class="rounded bg-light d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 80px; height: 80px;">
+                                            <i class="fas fa-university fa-2x text-secondary"></i>
+                                        </div>
+                                        {% else %}
+                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 80px; height: 80px;">
+                                            <i class="fas fa-user fa-2x text-light"></i>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                    <h5>{{ result.name }}</h5>
+                                </div>
+                                
+                                {% if result.user_type == 'student' %}
+                                <p class="text-muted mb-3 text-center">
+                                    {% if result.bio %}
+                                        {{ result.bio|truncate(100) }}
+                                    {% else %}
+                                        Student at Edspot
+                                    {% endif %}
+                                </p>
+                                {% if result.skills and result.skills|length > 0 %}
+                                <div class="d-flex flex-wrap gap-1 mb-3 justify-content-center">
+                                    {% for skill in result.skills[:3] %}
+                                    <span class="badge bg-secondary">{{ skill }}</span>
+                                    {% endfor %}
+                                    {% if result.skills|length > 3 %}
+                                    <span class="badge bg-secondary">+{{ result.skills|length - 3 }} more</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <p class="text-muted mb-3 text-center">
+                                    {% if result.location %}
+                                        <i class="fas fa-map-marker-alt me-1"></i> {{ result.location }}
+                                    {% else %}
+                                        University
+                                    {% endif %}
+                                </p>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-center mt-3">
+                                    <a href="{{ url_for('profile.view_profile', user_id=result.id) }}" class="btn btn-outline-primary btn-sm me-2">
+                                        View Profile
+                                    </a>
+                                    
+                                    {% if current_user.id != result.id %}
+                                        {% if result.user_type == 'student' and current_user.user_type == 'student' %}
+                                            {% if hasattr(result, 'is_connected') and result.is_connected %}
+                                            <form action="{{ url_for('profile.disconnect_from_user', user_id=result.id) }}" method="post">
+                                                <button class="btn btn-outline-secondary btn-sm">Disconnect</button>
+                                            </form>
+                                            {% else %}
+                                            <form action="{{ url_for('profile.connect_with_user', user_id=result.id) }}" method="post">
+                                                <button class="btn btn-secondary btn-sm">Connect</button>
+                                            </form>
+                                            {% endif %}
+                                        {% elif result.user_type == 'university' and current_user.user_type == 'student' %}
+                                            {% if hasattr(result, 'is_following') and result.is_following %}
+                                            <form action="{{ url_for('profile.unfollow_university', university_id=result.id) }}" method="post">
+                                                <button class="btn btn-outline-secondary btn-sm">Unfollow</button>
+                                            </form>
+                                            {% else %}
+                                            <form action="{{ url_for('profile.follow_university', university_id=result.id) }}" method="post">
+                                                <button class="btn btn-secondary btn-sm">Follow</button>
+                                            </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No results found for "{{ query }}". Try a different search term or filter.
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center my-5">
+                <div class="mb-4">
+                    <i class="fas fa-search fa-5x text-muted"></i>
+                </div>
+                <h3>Search for people and universities</h3>
+                <p class="text-muted">
+                    Find students with specific skills, universities in particular locations, or search by name.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

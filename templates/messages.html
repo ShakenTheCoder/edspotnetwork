@@ -1,0 +1,191 @@
+{% extends 'layout.html' %}
+
+{% block title %}Messages - Edspot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="mb-4">Messages</h2>
+        
+        {% if other_user %}
+        <!-- Individual conversation view -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <!-- Sidebar with conversations -->
+                    <div class="col-md-4 col-lg-3 messages-sidebar">
+                        {% for conversation in conversations %}
+                        <a href="{{ url_for('messaging.conversation', other_user_id=conversation.user.id) }}" class="text-decoration-none">
+                            <div class="conversation-item {% if conversation.user.id == other_user.id %}active{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        {% if conversation.user.profile_image %}
+                                        <img src="{{ conversation.user.profile_image }}" alt="{{ conversation.user.name }}" class="rounded-circle" width="40" height="40">
+                                        {% else %}
+                                            {% if conversation.user.user_type == 'university' %}
+                                            <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-university text-secondary"></i>
+                                            </div>
+                                            {% else %}
+                                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-light"></i>
+                                            </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="ms-3">
+                                        <div class="fw-bold">{{ conversation.user.name }}</div>
+                                        <div class="small text-muted">
+                                            {{ conversation.last_message.content|truncate(20) }}
+                                            <span class="ms-1">{{ conversation.last_message.timestamp|format_time }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                        
+                        {% if not conversations %}
+                        <div class="p-3 text-center text-muted">
+                            <p>No conversations yet.</p>
+                            <p>Use search to find people to message.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Conversation area -->
+                    <div class="col-md-8 col-lg-9 messages-container">
+                        <div class="messages-header">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    {% if other_user.profile_image %}
+                                    <img src="{{ other_user.profile_image }}" alt="{{ other_user.name }}" class="rounded-circle" width="40" height="40">
+                                    {% else %}
+                                        {% if other_user.user_type == 'university' %}
+                                        <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-university text-secondary"></i>
+                                        </div>
+                                        {% else %}
+                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-light"></i>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="mb-0">{{ other_user.name }}</h5>
+                                    <small class="text-muted">
+                                        {{ other_user.user_type|capitalize }}
+                                    </small>
+                                </div>
+                                <div class="ms-auto">
+                                    <a href="{{ url_for('profile.view_profile', user_id=other_user.id) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-user"></i> View Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="messages-body" data-conversation-id="{{ other_user.id }}">
+                            {% for message in messages %}
+                            <div class="message-bubble {% if message.sender_id == current_user.id %}message-sender{% else %}message-receiver{% endif %}">
+                                <div class="message-content">{{ message.content }}</div>
+                                <div class="message-time">{{ message.timestamp|format_time }}</div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if not messages %}
+                            <div class="text-center text-muted my-5">
+                                <p>No messages yet.</p>
+                                <p>Send a message to start the conversation.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="message-form">
+                            <form method="post" action="{{ url_for('messaging.conversation', other_user_id=other_user.id) }}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="message" placeholder="Type a message..." required>
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i> Send
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Conversations list view -->
+        <div class="card">
+            <div class="card-body">
+                {% if conversations %}
+                <div class="list-group">
+                    {% for conversation in conversations %}
+                    <a href="{{ url_for('messaging.conversation', other_user_id=conversation.user.id) }}" class="list-group-item list-group-item-action bg-transparent">
+                        <div class="d-flex w-100 align-items-center">
+                            <div class="flex-shrink-0">
+                                {% if conversation.user.profile_image %}
+                                <img src="{{ conversation.user.profile_image }}" alt="{{ conversation.user.name }}" class="rounded-circle" width="50" height="50">
+                                {% else %}
+                                    {% if conversation.user.user_type == 'university' %}
+                                    <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-university fa-lg text-secondary"></i>
+                                    </div>
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user fa-lg text-light"></i>
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            <div class="ms-3 flex-grow-1">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ conversation.user.name }}</h5>
+                                    <small class="text-muted">{{ conversation.last_message.timestamp|format_time }}</small>
+                                </div>
+                                <p class="mb-1">{{ conversation.last_message.content|truncate(50) }}</p>
+                                <small class="text-muted">
+                                    {% if conversation.user.user_type == 'student' %}
+                                    <i class="fas fa-user-graduate me-1"></i> Student
+                                    {% else %}
+                                    <i class="fas fa-university me-1"></i> University
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center my-5">
+                    <div class="mb-4">
+                        <i class="fas fa-comments fa-5x text-muted"></i>
+                    </div>
+                    <h3>No messages yet</h3>
+                    <p class="text-muted">Start a conversation with a student or university.</p>
+                    <a href="{{ url_for('search.search') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-search"></i> Find People
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Scroll to bottom of messages on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const messagesBody = document.querySelector('.messages-body');
+        if (messagesBody) {
+            messagesBody.scrollTop = messagesBody.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

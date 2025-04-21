@@ -1,0 +1,172 @@
+{% extends 'layout.html' %}
+
+{% block title %}Home - Edspot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left sidebar - User profile summary -->
+    <div class="col-lg-3 d-none d-lg-block">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                {% if user.profile_image %}
+                <img src="{{ user.profile_image }}" alt="{{ user.name }}" class="rounded-circle mb-3" width="100" height="100">
+                {% else %}
+                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+                    <i class="fas fa-user fa-3x text-light"></i>
+                </div>
+                {% endif %}
+                <h5 class="mb-1">{{ user.name }}</h5>
+                <p class="text-muted mb-3">
+                    {% if user.user_type == 'student' %}
+                    Student
+                    {% else %}
+                    University
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('profile.view_profile', user_id=user.id) }}" class="btn btn-outline-primary btn-sm d-block mb-2">View Profile</a>
+                <a href="{{ url_for('messaging.messages') }}" class="btn btn-outline-secondary btn-sm d-block">Messages</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Links</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('search.search', type='student') }}" class="list-group-item list-group-item-action bg-transparent">
+                    <i class="fas fa-search me-2"></i> Find Students
+                </a>
+                <a href="{{ url_for('search.search', type='university') }}" class="list-group-item list-group-item-action bg-transparent">
+                    <i class="fas fa-search me-2"></i> Find Universities
+                </a>
+                <a href="{{ url_for('messaging.chat') }}" class="list-group-item list-group-item-action bg-transparent">
+                    <i class="fas fa-comments me-2"></i> Global Chat
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main content - Feed -->
+    <div class="col-lg-6">
+        <!-- Create post card -->
+        <div class="card create-post-card">
+            <div class="card-body">
+                <form action="{{ url_for('feed.create_post') }}" method="post">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="3" placeholder="What's on your mind?"></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">Post</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Feed posts -->
+        {% if posts %}
+            {% for post_data in posts %}
+            <div class="card post-card">
+                <div class="card-body">
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            {% if post_data.user.profile_image %}
+                            <img src="{{ post_data.user.profile_image }}" alt="{{ post_data.user.name }}" class="post-user-img">
+                            {% else %}
+                                {% if post_data.user.user_type == 'university' %}
+                                <div class="post-user-img d-flex align-items-center justify-content-center bg-light">
+                                    <i class="fas fa-university text-secondary"></i>
+                                </div>
+                                {% else %}
+                                <div class="post-user-img d-flex align-items-center justify-content-center bg-secondary">
+                                    <i class="fas fa-user text-light"></i>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0">
+                                <a href="{{ url_for('profile.view_profile', user_id=post_data.user.id) }}" class="text-decoration-none">
+                                    {{ post_data.user.name }}
+                                </a>
+                                <span class="badge {% if post_data.user.user_type == 'student' %}bg-primary{% else %}bg-success{% endif %} ms-2">
+                                    {{ post_data.user.user_type|capitalize }}
+                                </span>
+                            </h5>
+                            <p class="text-muted small mb-0">{{ post_data.post.timestamp|time_ago }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="post-content mb-3">
+                        {{ post_data.post.content }}
+                    </div>
+                    
+                    <div class="post-actions d-flex align-items-center pt-2">
+                        <span class="me-3 like-count">{{ post_data.post.likes|length }}</span>
+                        {% if post_data.is_liked %}
+                        <form action="{{ url_for('feed.unlike_post_route', post_id=post_data.post.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-link text-decoration-none like-button" data-post-id="{{ post_data.post.id }}" data-action="unlike">
+                                <i class="fas fa-heart text-danger"></i> Unlike
+                            </button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('feed.like_post_route', post_id=post_data.post.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-link text-decoration-none like-button" data-post-id="{{ post_data.post.id }}" data-action="like">
+                                <i class="far fa-heart"></i> Like
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info mt-4">
+                <h4 class="alert-heading">Your feed is empty!</h4>
+                <p>Connect with students or follow universities to see their posts here.</p>
+                <hr>
+                <p class="mb-0">Use the search feature to find people and institutions that interest you.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Right sidebar - Suggestions -->
+    <div class="col-lg-3 d-none d-lg-block">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Trending Topics</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action bg-transparent">
+                    #AcademicExcellence
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-transparent">
+                    #CareerAdvice
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-transparent">
+                    #CampusLife
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-transparent">
+                    #ResearchOpportunities
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-transparent">
+                    #InternshipExperience
+                </a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Global Chat</h5>
+                <a href="{{ url_for('messaging.chat') }}" class="btn btn-sm btn-link">View All</a>
+            </div>
+            <div class="card-body">
+                <p class="text-center">
+                    <i class="fas fa-comments fa-3x mb-3 text-muted"></i><br>
+                    Join the global chat to connect with other users.
+                </p>
+                <a href="{{ url_for('messaging.chat') }}" class="btn btn-outline-primary d-block">Go to Chat</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

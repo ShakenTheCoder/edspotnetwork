@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ error }} - Edspot{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card my-5 text-center">
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        {% if error == "Page Not Found" %}
+                        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-secondary">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        {% else %}
+                        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-danger">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    
+                    <h1 class="display-6 mb-3">{{ error }}</h1>
+                    <p class="lead mb-4">{{ message }}</p>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{{ url_for('feed.home') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i> Go to Home
+                        </a>
+                        <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

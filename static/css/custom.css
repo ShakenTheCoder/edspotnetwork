@@ -1,0 +1,236 @@
+/* Custom styles for Edspot */
+
+/* Colors */
+:root {
+  --edspot-primary: #0073b1;
+  --edspot-secondary: #2867b2;
+  --edspot-accent: #00a0dc;
+  --edspot-light: #e6f7ff;
+  --edspot-dark: #283e4a;
+}
+
+/* Global */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+}
+
+/* Auth pages */
+.auth-container {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+/* Profile */
+.profile-header {
+  position: relative;
+  background-color: var(--bs-dark);
+  padding: 2rem 0;
+  margin-bottom: 1rem;
+}
+
+.profile-pic {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 5px solid var(--bs-body-bg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.university-logo {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  background-color: white;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bio-section {
+  margin-bottom: 2rem;
+}
+
+.section-card {
+  margin-bottom: 1.5rem;
+}
+
+/* Feed */
+.post-card {
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s;
+}
+
+.post-card:hover {
+  transform: translateY(-2px);
+}
+
+.post-user-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.post-content {
+  white-space: pre-line;
+}
+
+.post-actions {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.create-post-card {
+  margin-bottom: 2rem;
+}
+
+/* Messages */
+.chat-container {
+  height: calc(100vh - 250px);
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-sidebar {
+  border-right: 1px solid var(--bs-border-color);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  cursor: pointer;
+  padding: 10px;
+  border-bottom: 1px solid var(--bs-border-color);
+  transition: background-color 0.2s;
+}
+
+.conversation-item:hover, .conversation-item.active {
+  background-color: var(--bs-dark);
+}
+
+.messages-container {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.messages-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.message-bubble {
+  max-width: 70%;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  position: relative;
+}
+
+.message-sender {
+  background-color: var(--bs-primary);
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 0;
+}
+
+.message-receiver {
+  background-color: var(--bs-secondary);
+  color: white;
+  margin-right: auto;
+  border-bottom-left-radius: 0;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  opacity: 0.8;
+}
+
+.message-form {
+  padding: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/* Global Chat */
+.chat-messages {
+  height: calc(100vh - 350px);
+  min-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--bs-dark);
+  border-radius: 0.5rem;
+}
+
+.chat-message {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.chat-sender {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.chat-content {
+  word-break: break-word;
+}
+
+.chat-form {
+  margin-top: 1rem;
+}
+
+/* Search */
+.search-filters {
+  margin-bottom: 1.5rem;
+}
+
+.search-result-card {
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s;
+}
+
+.search-result-card:hover {
+  transform: translateY(-2px);
+}
+
+.user-type-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .profile-pic, .university-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  .chat-container {
+    height: calc(100vh - 300px);
+  }
+}
