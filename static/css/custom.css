@@ -86,6 +86,26 @@ body {
     right: 0.75rem;
 }
 
+/* Search suggestions */
+.search-suggestions {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--bs-secondary);
+}
+
+.suggestion-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover, .suggestion-item:focus {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none !important;
+}
+
 /* Messages styling */
 .conversation-list {
     max-height: 500px;

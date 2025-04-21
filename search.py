@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from models import User
-from sqlalchemy import or_
+from sqlalchemy import or_, and_, func, cast, String
+from app import db
 import json
 
 search_bp = Blueprint('search', __name__)
@@ -9,6 +10,7 @@ search_bp = Blueprint('search', __name__)
 @search_bp.route('/search')
 @login_required
 def search():
+    # Get search parameters
     query = request.args.get('q', '')
     user_type = request.args.get('type', '')
     location = request.args.get('location', '')
@@ -38,54 +40,84 @@ def search():
         if location:
             search_query = search_query.filter(User.location.ilike(f'%{location}%'))
         
+        # Get the initial results based on basic filters
+        potential_results = search_query.all()
+        results = []
+        
         # Filter by skills for students
         if skills and (not user_type or user_type == 'student'):
-            # This is more complex since skills are stored as JSON
-            # For a proper solution, we'd need a different database schema or full-text search
-            # For now, we'll filter in Python after the query
-            potential_results = search_query.all()
-            results = []
-            
             skill_list = [s.strip().lower() for s in skills.split(',')]
+            
             for user in potential_results:
                 if user.user_type == 'student':
-                    user_skills = [s.lower() for s in user.skills_list]
-                    if any(skill in user_skills for skill in skill_list):
+                    # Use the property to get skills list
+                    user_skills = []
+                    try:
+                        # Get skills safely using the property
+                        if hasattr(user, 'skills_list') and user.skills_list:
+                            user_skills = [s.lower() for s in user.skills_list]
+                    except:
+                        # Fallback if there's an error
+                        pass
+                        
+                    # Check if any of the user's skills match the search skills
+                    if any(skill in user_skills for skill in skill_list) or not user_skills:
                         results.append(user)
                 else:
+                    # Include non-students in results 
                     results.append(user)
         else:
             # If no skills filter or only looking for universities
-            results = search_query.all()
+            results = potential_results
         
-        # For programs filter (universities), we'd do something similar to skills
+        # Filter by programs (for universities)
         if programs and (not user_type or user_type == 'university'):
-            # Similarly, for a proper solution, we'd need a different db schema
-            # This is a simplified version
-            if not skills:  # If we haven't already filtered
-                results = search_query.all()
+            programs_list = [p.strip().lower() for p in programs.split(',')]
+            
+            # Only apply this filter if we haven't already filtered by skills
+            if not skills:
+                results = potential_results
                 
             filtered_results = []
             for user in results:
                 if user.user_type == 'university':
-                    if programs.lower() in user.description.lower():
+                    # Check if programs match in description or other fields
+                    description = (user.description or '').lower()
+                    
+                    # Include university if any program matches or description is empty
+                    if any(program in description for program in programs_list) or not description:
                         filtered_results.append(user)
                 else:
+                    # Keep non-university users in the results
                     filtered_results.append(user)
             
             results = filtered_results
     
-    # For students, check if already connected or following
+    # Add connection and following information
     if current_user.user_type == 'student':
-        # In a real implementation, we'd fetch the connections from the join table
-        # Here, we're setting dummy values for now
+        # In a real implementation, we'd fetch the connections from join tables
+        # For now, we'll make sure each result has the needed properties
         for result in results:
             if result.user_type == 'student':
-                # Check student connections
+                # Check if student is connected
                 result.is_connected = False  # Placeholder
+                # In a proper implementation: 
+                # result.is_connected = StudentConnection.query.filter(
+                #     and_(
+                #         StudentConnection.student1_id == current_user.id,
+                #         StudentConnection.student2_id == result.id
+                #     )
+                # ).first() is not None
             elif result.user_type == 'university':
-                # Check university following
+                # Check if student is following university
                 result.is_following = False  # Placeholder
+                # In a proper implementation:
+                # result.is_following = UniversityFollower.query.filter(
+                #     and_(
+                #         UniversityFollower.student_id == current_user.id,
+                #         UniversityFollower.university_id == result.id
+                #     )
+                # ).first() is not None
     
     return render_template(
         'search.html', 
@@ -96,3 +128,45 @@ def search():
         skills=skills,
         programs=programs
     )
+
+# API endpoint for search suggestions
+@search_bp.route('/api/search/suggestions')
+@login_required
+def search_suggestions():
+    query = request.args.get('q', '')
+    user_type = request.args.get('type', '')
+    
+    if not query or len(query) < 2:
+        return jsonify([])
+    
+    # Build search query
+    search_query = User.query
+    
+    # Filter by user type if specified
+    if user_type in ['student', 'university']:
+        search_query = search_query.filter(User.user_type == user_type)
+    
+    # Search by name
+    search_query = search_query.filter(User.name.ilike(f'%{query}%'))
+    
+    # Limit to 10 results
+    suggestions = search_query.limit(10).all()
+    
+    # Format results
+    results = []
+    for user in suggestions:
+        result = {
+            'id': user.id,
+            'name': user.name,
+            'type': user.user_type,
+        }
+        
+        # Add type-specific details
+        if user.user_type == 'student':
+            result['subtitle'] = user.bio[:50] + '...' if user.bio and len(user.bio) > 50 else 'Student'
+        else:
+            result['subtitle'] = user.location or 'University'
+            
+        results.append(result)
+    
+    return jsonify(results)
