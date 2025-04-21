@@ -1,29 +1,81 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Table
+from sqlalchemy.orm import relationship
+from flask_login import UserMixin
+from app import db
+import json
 
-class User:
-    def __init__(self, id, email, password, user_type, name=None, profile_image=None):
-        self.id = id
-        self.email = email
+# Many-to-many relationships tables
+student_connections = Table(
+    'student_connections',
+    db.metadata,
+    Column('student1_id', Integer, ForeignKey('user.id'), primary_key=True),
+    Column('student2_id', Integer, ForeignKey('user.id'), primary_key=True)
+)
+
+student_university = Table(
+    'student_university',
+    db.metadata,
+    Column('student_id', Integer, ForeignKey('user.id'), primary_key=True),
+    Column('university_id', Integer, ForeignKey('user.id'), primary_key=True)
+)
+
+post_likes = Table(
+    'post_likes',
+    db.metadata,
+    Column('post_id', Integer, ForeignKey('post.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('user.id'), primary_key=True)
+)
+
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'user'
+    
+    id = Column(Integer, primary_key=True)
+    email = Column(String(120), unique=True, nullable=False)
+    password_hash = Column(String(256), nullable=False)
+    user_type = Column(String(20), nullable=False)  # 'student' or 'university'
+    name = Column(String(100))
+    profile_image = Column(String(200))
+    date_joined = Column(DateTime, default=datetime.now)
+    
+    # For students
+    bio = Column(Text, default="")
+    education = Column(Text, default="[]")  # JSON-encoded list
+    skills = Column(Text, default="[]")  # JSON-encoded list
+    
+    # For universities
+    description = Column(Text, default="")
+    location = Column(String(100), default="")
+    website = Column(String(100), default="")
+    
+    # Relationships
+    posts = relationship("Post", backref="author", lazy=True, cascade="all, delete-orphan")
+    sent_messages = relationship("Message", foreign_keys="Message.sender_id", backref="sender", lazy=True, cascade="all, delete-orphan")
+    received_messages = relationship("Message", foreign_keys="Message.receiver_id", backref="receiver", lazy=True, cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage", backref="user", lazy=True, cascade="all, delete-orphan")
+    
+    # Use hybrid properties for serialized arrays
+    @property
+    def education_list(self):
+        return json.loads(self.education) if self.education else []
+    
+    @education_list.setter
+    def education_list(self, education_list):
+        self.education = json.dumps(education_list)
+    
+    @property
+    def skills_list(self):
+        return json.loads(self.skills) if self.skills else []
+    
+    @skills_list.setter
+    def skills_list(self, skills_list):
+        self.skills = json.dumps(skills_list)
+    
+    def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-        self.user_type = user_type  # 'student' or 'university'
-        self.name = name
-        self.profile_image = profile_image
-        self.date_joined = datetime.now()
-        
-        # For students
-        self.bio = ""
-        self.education = []
-        self.skills = []
-        self.connections = []  # IDs of connected students
-        self.followed_universities = []  # IDs of universities the student follows
-        
-        # For universities
-        self.description = ""
-        self.location = ""
-        self.website = ""
-        self.followers = []  # IDs of interested students
-        
+    
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     
@@ -40,48 +92,57 @@ class User:
         if self.user_type == 'student':
             base_dict.update({
                 'bio': self.bio,
-                'education': self.education,
-                'skills': self.skills,
-                'connections': self.connections,
-                'followed_universities': self.followed_universities
+                'education': self.education_list,
+                'skills': self.skills_list,
+                # These would be fetched from the relationships via queries
+                'connections': [],
+                'followed_universities': []
             })
         else:  # university
             base_dict.update({
                 'description': self.description,
                 'location': self.location,
                 'website': self.website,
-                'followers': self.followers
+                # These would be fetched from the relationships via queries
+                'followers': []
             })
             
         return base_dict
 
-class Post:
-    def __init__(self, id, user_id, content, timestamp=None):
-        self.id = id
-        self.user_id = user_id
-        self.content = content
-        self.timestamp = timestamp or datetime.now()
-        self.likes = []  # List of user IDs who liked the post
-        
+
+class Post(db.Model):
+    __tablename__ = 'post'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.now)
+    
+    # Many-to-many relationship for likes
+    liked_by = relationship('User', secondary=post_likes, lazy='dynamic',
+                           backref=db.backref('liked_posts', lazy='dynamic'))
+    
     def to_dict(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
             'content': self.content,
             'timestamp': self.timestamp,
-            'likes': self.likes,
-            'like_count': len(self.likes)
+            'likes': [user.id for user in self.liked_by],
+            'like_count': self.liked_by.count()
         }
 
-class Message:
-    def __init__(self, id, sender_id, receiver_id, content, timestamp=None):
-        self.id = id
-        self.sender_id = sender_id
-        self.receiver_id = receiver_id
-        self.content = content
-        self.timestamp = timestamp or datetime.now()
-        self.is_read = False
-        
+
+class Message(db.Model):
+    __tablename__ = 'message'
+    
+    id = Column(Integer, primary_key=True)
+    sender_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    receiver_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.now)
+    is_read = Column(Boolean, default=False)
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -92,13 +153,15 @@ class Message:
             'is_read': self.is_read
         }
 
-class ChatMessage:
-    def __init__(self, id, user_id, content, timestamp=None):
-        self.id = id
-        self.user_id = user_id
-        self.content = content
-        self.timestamp = timestamp or datetime.now()
-        
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_message'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime, default=datetime.now)
+    
     def to_dict(self):
         return {
             'id': self.id,
