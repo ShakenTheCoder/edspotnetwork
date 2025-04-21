@@ -146,67 +146,109 @@ function setupChatPolling() {
     const chatContainer = document.querySelector('.chat-messages');
     
     if (chatContainer) {
+        // Get the most recent message ID to use as baseline for polling
+        let lastMessageId = Array.from(document.querySelectorAll('.chat-message'))
+            .map(el => parseInt(el.dataset.messageId || '0'))
+            .reduce((max, id) => Math.max(max, id), 0);
+            
         // Poll for new chat messages every 5 seconds
         setInterval(() => {
-            fetch('/chat', {
+            fetch(`/chat?since=${lastMessageId}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => response.json())
             .then(data => {
-                // Update the chat container with any new messages
-                const messages = data.messages;
-                let messagesHTML = '';
-                
-                messages.forEach(message => {
-                    messagesHTML += `
-                        <div class="chat-message">
+                if (data.messages && data.messages.length > 0) {
+                    // Add only new messages instead of replacing the entire content
+                    data.messages.forEach(message => {
+                        // Create a new message element
+                        const messageElement = document.createElement('div');
+                        messageElement.className = 'chat-message';
+                        messageElement.dataset.messageId = message.id;
+                        
+                        messageElement.innerHTML = `
                             <div class="chat-sender">
-                                ${message.user.name} 
-                                <span class="badge ${message.user.user_type === 'student' ? 'bg-primary' : 'bg-success'}">
-                                    ${message.user.user_type === 'student' ? 'Student' : 'University'}
+                                <a href="/profile/${message.user.id}" class="text-decoration-none">
+                                    ${message.user.name}
+                                </a>
+                                <span class="badge ${message.user.user_type === 'student' ? 'bg-primary' : 'bg-success'} ms-1">
+                                    ${message.user.user_type.charAt(0).toUpperCase() + message.user.user_type.slice(1)}
                                 </span>
                                 <small class="text-muted">${message.timestamp}</small>
                             </div>
                             <div class="chat-content">${message.content}</div>
-                        </div>
-                    `;
-                });
-                
-                chatContainer.innerHTML = messagesHTML;
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+                        `;
+                        
+                        // Add to chat container
+                        chatContainer.appendChild(messageElement);
+                        
+                        // Update last message ID
+                        lastMessageId = Math.max(lastMessageId, message.id);
+                    });
+                    
+                    // Scroll to bottom to show new messages
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error fetching chat messages:', error));
         }, 5000);
         
-        // Handle chat form submission
-        const chatForm = document.querySelector('.chat-form form');
-        if (chatForm) {
+        // Handle chat form submission with AJAX
+        const chatForm = document.getElementById('chatForm');
+        const messageInput = document.getElementById('messageInput');
+        
+        if (chatForm && messageInput) {
             chatForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const chatInput = this.querySelector('input[name="message"]');
-                const message = chatInput.value.trim();
+                const message = messageInput.value.trim();
+                if (!message) return;
                 
-                if (message) {
-                    fetch('/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: `message=${encodeURIComponent(message)}`
+                fetch(chatForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        'message': message
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            // Clear the input field
-                            chatInput.value = '';
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Clear the input field
+                        messageInput.value = '';
+                        
+                        // Create and add the new message element
+                        const messageElement = document.createElement('div');
+                        messageElement.className = 'chat-message';
+                        messageElement.dataset.messageId = data.message.id;
+                        
+                        messageElement.innerHTML = `
+                            <div class="chat-sender">
+                                <a href="/profile/${data.message.user.id}" class="text-decoration-none">
+                                    ${data.message.user.name}
+                                </a>
+                                <span class="badge ${data.message.user.user_type === 'student' ? 'bg-primary' : 'bg-success'} ms-1">
+                                    ${data.message.user.user_type.charAt(0).toUpperCase() + data.message.user.user_type.slice(1)}
+                                </span>
+                                <small class="text-muted">${data.message.timestamp}</small>
+                            </div>
+                            <div class="chat-content">${data.message.content}</div>
+                        `;
+                        
+                        // Add to chat container and scroll to show it
+                        chatContainer.appendChild(messageElement);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        
+                        // Update the last message ID
+                        lastMessageId = data.message.id;
+                    }
+                })
+                .catch(error => console.error('Error sending message:', error));
             });
         }
     }

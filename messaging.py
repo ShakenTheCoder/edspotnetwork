@@ -67,6 +67,7 @@ def chat():
     user_id = session.get('user_id')
     user = get_user_by_id(user_id)
     
+    # Handle message posting
     if request.method == 'POST':
         content = request.form.get('message')
         
@@ -75,36 +76,68 @@ def chat():
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 sender = get_user_by_id(message.user_id)
-                return jsonify({
-                    'status': 'success',
-                    'message': {
-                        'id': message.id,
-                        'content': message.content,
-                        'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                        'user': {
-                            'id': sender.id if sender else 0,
-                            'name': sender.name if sender else "Unknown User",
-                            'user_type': sender.user_type if sender else "unknown"
+                if sender:
+                    return jsonify({
+                        'status': 'success',
+                        'message': {
+                            'id': message.id,
+                            'content': message.content,
+                            'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                            'user': {
+                                'id': sender.id,
+                                'name': sender.name,
+                                'user_type': sender.user_type
+                            }
                         }
-                    }
-                })
+                    })
     
+    # Check if we're polling for new messages since a specific ID
+    since_id = request.args.get('since', 0, type=int)
     messages = get_chat_messages()
     
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({
-            'messages': [
-                {
+    # Filter messages if since_id is provided in AJAX request
+    if since_id > 0 and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        new_messages = [msg for msg in messages if msg.id > since_id]
+        
+        # Format the messages for JSON response
+        response_messages = []
+        for msg in new_messages:
+            sender = get_user_by_id(msg.user_id)
+            if sender:
+                response_messages.append({
                     'id': msg.id,
                     'content': msg.content,
                     'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                     'user': {
-                        'id': get_user_by_id(msg.user_id).id if get_user_by_id(msg.user_id) else 0,
-                        'name': get_user_by_id(msg.user_id).name if get_user_by_id(msg.user_id) else "Unknown User",
-                        'user_type': get_user_by_id(msg.user_id).user_type if get_user_by_id(msg.user_id) else "unknown"
+                        'id': sender.id,
+                        'name': sender.name,
+                        'user_type': sender.user_type
                     }
-                } for msg in messages if get_user_by_id(msg.user_id)
-            ]
+                })
+        
+        return jsonify({
+            'messages': response_messages
+        })
+    
+    # Handle regular AJAX request for all messages
+    elif request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        response_messages = []
+        for msg in messages:
+            sender = get_user_by_id(msg.user_id)
+            if sender:
+                response_messages.append({
+                    'id': msg.id,
+                    'content': msg.content,
+                    'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                    'user': {
+                        'id': sender.id,
+                        'name': sender.name,
+                        'user_type': sender.user_type
+                    }
+                })
+        
+        return jsonify({
+            'messages': response_messages
         })
     
     # Pass the get_user_by_id function to the template
