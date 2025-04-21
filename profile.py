@@ -63,9 +63,11 @@ def view_profile(user_id):
             is_self=(current_user.id == user_id)
         )
 
+@profile_bp.route('/settings', methods=['GET', 'POST'])
 @profile_bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
+    """Edit profile settings route"""
     # Use current_user from Flask-Login
     user = current_user
     

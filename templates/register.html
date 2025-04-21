@@ -9,57 +9,158 @@
             <div class="card-body p-4 p-md-5">
                 <h2 class="text-center mb-4">Create an Account</h2>
                 
-                <form method="post" action="{{ url_for('auth.register') }}">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                        <div class="form-text">We'll never share your email with anyone else.</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                        <div class="form-text">Use at least 8 characters with a mix of letters, numbers & symbols.</div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label">Account Type</label>
-                        <div class="d-flex gap-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="user_type" id="type_student" value="student" checked>
-                                <label class="form-check-label" for="type_student">
-                                    Student
-                                </label>
+                <!-- Account Type Selector -->
+                <ul class="nav nav-pills nav-justified mb-4" id="accountTypeTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="student-tab" data-bs-toggle="pill" data-bs-target="#student-form" type="button" role="tab" aria-controls="student-form" aria-selected="true">Student</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="university-tab" data-bs-toggle="pill" data-bs-target="#university-form" type="button" role="tab" aria-controls="university-form" aria-selected="false">University</button>
+                    </li>
+                </ul>
+                
+                <!-- Tab Content -->
+                <div class="tab-content" id="accountTypeTabContent">
+                    <!-- Student Registration Form -->
+                    <div class="tab-pane fade show active" id="student-form" role="tabpanel" aria-labelledby="student-tab">
+                        <form method="post" action="{{ url_for('auth.register') }}" id="student-registration-form">
+                            <input type="hidden" name="user_type" value="student">
+                            
+                            <div class="mb-3">
+                                <label for="student-name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="student-name" name="name" required>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="user_type" id="type_university" value="university">
-                                <label class="form-check-label" for="type_university">
-                                    University
-                                </label>
+                            
+                            <div class="mb-3">
+                                <label for="student-email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="student-email" name="email" required>
+                                <div class="form-text">We'll never share your email with anyone else.</div>
                             </div>
-                        </div>
+                            
+                            <div class="mb-3">
+                                <label for="student-bio" class="form-label">Bio</label>
+                                <textarea class="form-control" id="student-bio" name="bio" rows="2"></textarea>
+                                <div class="form-text">Tell us a bit about yourself.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="student-skills" class="form-label">Skills</label>
+                                <input type="text" class="form-control" id="student-skills" name="skills">
+                                <div class="form-text">Comma-separated list of your skills (e.g., Programming, Design, Research).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="student-password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="student-password" name="password" required>
+                                <div class="form-text">Use at least 8 characters with a mix of letters, numbers & symbols.</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="student-confirm-password" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="student-confirm-password" name="confirm_password" required>
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-primary btn-lg">Create Student Account</button>
+                            </div>
+                        </form>
                     </div>
                     
-                    <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                    <!-- University Registration Form -->
+                    <div class="tab-pane fade" id="university-form" role="tabpanel" aria-labelledby="university-tab">
+                        <form method="post" action="{{ url_for('auth.register') }}" id="university-registration-form">
+                            <input type="hidden" name="user_type" value="university">
+                            
+                            <div class="mb-3">
+                                <label for="university-name" class="form-label">University Name</label>
+                                <input type="text" class="form-control" id="university-name" name="name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="university-email" name="email" required>
+                                <div class="form-text">Official university email preferred.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-type" class="form-label">University Type</label>
+                                <select class="form-select" id="university-type" name="university_type">
+                                    <option value="public">Public</option>
+                                    <option value="private">Private</option>
+                                    <option value="community">Community College</option>
+                                    <option value="technical">Technical Institute</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="university-location" name="location">
+                                <div class="form-text">City, State, Country</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-website" class="form-label">Website</label>
+                                <input type="url" class="form-control" id="university-website" name="website">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-programs" class="form-label">Programs Offered</label>
+                                <textarea class="form-control" id="university-programs" name="programs" rows="2"></textarea>
+                                <div class="form-text">Comma-separated list of programs (e.g., Computer Science, Business, Engineering).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-description" class="form-label">Description</label>
+                                <textarea class="form-control" id="university-description" name="description" rows="3"></textarea>
+                                <div class="form-text">Brief description of your university.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="university-password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="university-password" name="password" required>
+                                <div class="form-text">Use at least 8 characters with a mix of letters, numbers & symbols.</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="university-confirm-password" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="university-confirm-password" name="confirm_password" required>
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-primary btn-lg">Create University Account</button>
+                            </div>
+                        </form>
                     </div>
-                    
-                    <div class="text-center">
-                        <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
-                    </div>
-                </form>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const studentTab = document.getElementById('student-tab');
+        const universityTab = document.getElementById('university-tab');
+        const studentForm = document.getElementById('student-registration-form');
+        const universityForm = document.getElementById('university-registration-form');
+        
+        // Set active form based on selected tab
+        studentTab.addEventListener('click', function() {
+            studentForm.classList.add('active');
+            universityForm.classList.remove('active');
+        });
+        
+        universityTab.addEventListener('click', function() {
+            universityForm.classList.add('active');
+            studentForm.classList.remove('active');
+        });
+    });
+</script>
 {% endblock %}

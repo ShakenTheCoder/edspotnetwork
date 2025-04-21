@@ -58,7 +58,7 @@ def register():
         # Validation
         error = None
         if not email or not password or not confirm_password or not name or not user_type:
-            error = 'All fields are required'
+            error = 'All required fields must be filled out'
         elif password != confirm_password:
             error = 'Passwords do not match'
         elif User.query.filter_by(email=email).first():
@@ -69,14 +69,44 @@ def register():
         if error:
             flash(error, 'danger')
         else:
-            # Create new user
+            # Create new user with common fields
             new_user = User(
                 email=email,
                 user_type=user_type,
                 name=name
             )
+            
+            # Set password
             new_user.set_password(password)
             
+            # Add user type specific fields
+            if user_type == 'student':
+                # Student specific fields
+                bio = request.form.get('bio', '')
+                skills = request.form.get('skills', '')
+                
+                new_user.bio = bio
+                if skills:
+                    new_user.skills_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
+                
+            elif user_type == 'university':
+                # University specific fields
+                university_type = request.form.get('university_type', '')
+                location = request.form.get('location', '')
+                website = request.form.get('website', '')
+                programs = request.form.get('programs', '')
+                description = request.form.get('description', '')
+                
+                new_user.location = location
+                new_user.website = website
+                new_user.description = description
+                
+                # Store university-specific attributes
+                if programs:
+                    # This would typically go in a separate programs field or table
+                    # For now, we'll just store it as a JSON list in a new field
+                    new_user.programs = programs
+                
             # Add to database
             db.session.add(new_user)
             db.session.commit()
