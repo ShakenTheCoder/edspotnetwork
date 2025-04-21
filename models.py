@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin
-from app import db
+from database import db
 import json
 
 # Many-to-many relationships tables

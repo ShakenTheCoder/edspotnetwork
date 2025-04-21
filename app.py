@@ -2,22 +2,14 @@ import os
 import logging
 from flask import Flask, redirect, url_for, render_template, session
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
-from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
+from database import db
 from utils import get_unread_message_count
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
-
-# Setup SQLAlchemy with the new style (SQLAlchemy 2.0 compatible)
-class Base(DeclarativeBase):
-    pass
-
-# Create the db instance
-db = SQLAlchemy(model_class=Base)
 
 # Create login manager
 login_manager = LoginManager()
